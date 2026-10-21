@@ -6,25 +6,27 @@ let DATA={stamps:[],templates:[]},mode='template',cat={template:0,stamp:0},color
 let frame={x:0,y:0,w:W,h:H},photoObj=null,placeholder=null,photoURL=null;
 
 fabric.Object.prototype.set({cornerSize:64,touchCornerSize:90,transparentCorners:false,cornerColor:'#4EA9A6',cornerStyle:'circle',borderColor:'#4EA9A6',borderScaleFactor:4,padding:8});
-const cv=new fabric.Canvas('c',{width:W,height:H,preserveObjectStacking:true,backgroundColor:'#FEF4E8'});
+const cv=new fabric.Canvas('c',{width:W,height:H,preserveObjectStacking:true,enableRetinaScaling:false,backgroundColor:'#FEF4E8'});
 
 const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.textContent=h;return e};
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const toast=m=>{const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.id);toast.id=setTimeout(()=>t.hidden=true,2400)};
 const loadFont=(f,t)=>document.fonts.load(`700 40px "${FAM[f]}"`,t).catch(()=>{});
 function fit(){const b=$('#stage'),s=Math.min((b.clientWidth-16)/W,(b.clientHeight-16)/H);
-  cv.setDimensions({width:W*s,height:H*s},{cssOnly:true});cv.calcOffset()}
+  cv.setDimensions({width:W*s+'px',height:H*s+'px'},{cssOnly:true});cv.calcOffset()}
 
 /* 写真 */
-function setPhoto(url){fabric.Image.fromURL(url,img=>{
-  if(!img)return toast('写真を読み込めませんでした');
+function setPhoto(url){const im=new Image();im.onerror=()=>toast('写真を読み込めませんでした');
+im.onload=()=>{const k=Math.min(1,2200/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement('canvas');
+  c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+  const img=new fabric.Image(c);
   if(photoObj)cv.remove(photoObj);
   if(placeholder){cv.remove(placeholder);placeholder=null}
   const s=Math.max(frame.w/img.width,frame.h/img.height);
   img.set({left:frame.x+frame.w/2,top:frame.y+frame.h/2,originX:'center',originY:'center',scaleX:s,scaleY:s,lockRotation:true,
     clipPath:new fabric.Rect({left:frame.x,top:frame.y,width:frame.w,height:frame.h,absolutePositioned:true})});
   img.setControlsVisibility({mtr:false});
-  photoObj=img;cv.add(img);cv.sendToBack(img);cv.requestRenderAll()})}
+  photoObj=img;cv.add(img);cv.sendToBack(img);cv.requestRenderAll()};im.src=url}
 function showPlaceholder(){
   const r=new fabric.Rect({width:frame.w,height:frame.h,fill:'rgba(78,169,166,.2)',stroke:'#4EA9A6',strokeWidth:6,strokeDashArray:[24,16]});
   const t=new fabric.Text('タップして写真を選ぶ',{fontSize:60,fill:'#5D321A',fontFamily:'Noto Sans JP',fontWeight:700,originX:'center',originY:'center',left:frame.w/2,top:frame.h/2});
